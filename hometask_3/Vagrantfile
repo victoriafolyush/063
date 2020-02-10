@@ -1,0 +1,33 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+$script = <<-SCRIPT
+apt-get update
+cd /vagrant 
+sudo chmod +x atlassian-confluence-7.3.1-x64.bin
+./atlassian-confluence-7.3.1-x64.bin -q -varfl /vagrant/output.varfl
+cd /opt/atlassian/confluence7_3_1/bin
+./start-confluence.sh
+apt-get update
+apt-get install mysql-server -y
+sudo mysql -e 'use mysql;
+update user set authentication_string=PASSWORD("123456") where User="root";
+flush privileges;
+CREATE DATABASE CONFLUENCE;
+quit'
+/etc/init.d/mysql start
+SCRIPT
+
+
+Vagrant.configure("2") do |config|
+	config.vm.box = "ubuntu/bionic64"
+
+	config.vm.network :forwarded_port, guest: 8090, host: 8080
+	config.vm.network :forwarded_port, guest: 3306, host: 3306
+
+	config.vm.provider "virtualbox" do |vb|
+     		vb.memory = "2048"
+   	end
+	config.vm.provision "shell", inline: $script
+end
